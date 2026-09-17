@@ -1,0 +1,21 @@
+{
+  "name": "patient-safe-appointment-search",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "tsx src/index_appointment_content.ts",
+    "dev": "tsx src/appointment_search_server.ts",
+    "test": "tsx --test test/patient_safe_results.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openai": "^4.86.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
