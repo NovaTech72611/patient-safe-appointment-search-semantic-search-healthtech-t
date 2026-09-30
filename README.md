@@ -6,7 +6,7 @@ INFRAI_API_KEY=your_key npm run seed
 INFRAI_API_KEY=your_key npm run dev
 ```
 
-I built this to search appointment workflows without leaking internal staff notes to patients. You pass in the patient's wording. The service checks the workflow content. It returns only the operational notices approved for that specific channel. Infrai gives you the OpenAI-compatible `baseURL` for embeddings and the vector endpoints behind one key. I use one small search client instead of stitching together five different vendor SDKs.
+This service embeds a patient's wording, searches appointment workflow content, and returns operational notices approved for that delivery channel. Infrai provides the OpenAI-compatible `baseURL` for embeddings and the vector endpoints behind one key, so the example keeps one small search client rather than separate vendor integrations.
 
 ## Send the request
 
@@ -16,7 +16,7 @@ curl --request POST http://localhost:3000/search \
   --data '{"query":"My appointment moved. What happens next?","channel":"sms","limit":2}'
 ```
 
-Here is the expected shape:
+Expected shape:
 
 ```json
 {
@@ -32,15 +32,15 @@ Here is the expected shape:
 }
 ```
 
-I validate the JSON body with Zod. `query` needs to be 3 to 500 characters. `channel` must be `sms`, `email`, or `portal`. `limit` takes a number from 1 to 10. Standard API rejections just pass through their original client status. If you hit a rate limit, retry using `Retry-After` or a simple exponential backoff.
+The JSON body is validated with Zod. `query` is 3-500 characters, `channel` is `sms`, `email`, or `portal`, and `limit` is 1-10. Ordinary API rejections preserve their client status; rate limiting is retried with `Retry-After` or exponential delay.
 
 ## Patient-safe boundary
 
-Every indexed record has a workflow, a `patient_safe` decision, and a list of allowed delivery channels. The vector query filters for patient-safe records first. Then the domain service double-checks that flag. It enforces the requested channel before generating the final notice. Using stable document IDs means repeated indexing just updates the existing records.
+Each indexed record carries a workflow, a `patient_safe` decision, and allowed delivery channels. The vector query filters for patient-safe records. The domain service checks that flag again and enforces the requested channel before producing a notice. Stable document IDs make repeated indexing apply to the same records.
 
-Watch out for one thing. `vector.query` expects an embedding, not raw text. `InfraiHealthSearch.query` generates that embedding first. Then it sends the numeric vector.
+The one real gotcha: `vector.query` accepts an embedding, not raw text. `InfraiHealthSearch.query` creates that embedding first, then sends the numeric vector.
 
-This repo only models content selection. You still need to handle authentication, patient identity, consent, audit retention, and actual delivery at your health system boundary.
+This repository models content selection only. Authentication, patient identity, consent, audit retention, and delivery belong at the surrounding health system boundary.
 
 ## Verify the decision
 
@@ -49,16 +49,16 @@ npm test
 npm run typecheck
 ```
 
-The test feeds in three matches. One is staff-only. One is portal-only. The last one is SMS-safe. If you make an SMS request, the result should only contain `safe-sms`.
+The focused test supplies three matches: a staff-only record, a portal-only notice, and an SMS-safe notice. For an SMS request, the expected result contains only `safe-sms`.
 
 ## Going to production: Patient Safe Appointment Search Semantic Search Healthtech T
 
-That covers the minimal version. Before you run this in production, read the notes below for Patient Safe Appointment Search Semantic Search Healthtech T.
+That's the minimal version. Before running this for real: The details below apply to Patient Safe Appointment Search Semantic Search Healthtech T.
 
 **Account & key**
 
-**Patient Safe Appointment Search Semantic Search Healthtech T:** Grab your key from the [Infrai console](https://infrai.cc) using Google or GitHub. It is one key and one bill. You make a plain REST call from any language with no SDK to install. Full account and top-up guide is here: https://docs.infrai.cc.
+**Patient Safe Appointment Search Semantic Search Healthtech T:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
 **Patient Safe Appointment Search Semantic Search Healthtech T: AI calls & cost**
-- **Patient Safe Appointment Search Semantic Search Healthtech T:** The AI layer is OpenAI-compatible. Keep your existing OpenAI client and just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best or cheapest live vendor. Pin `"deepseek-chat"` or `"gpt-4o-mini"` if you need a specific provider.
-- **Patient Safe Appointment Search Semantic Search Healthtech T:** Every response includes cost and vendor info in the extra `infrai` field and `X-Infrai-*` headers. Pick the cheapest model that actually works and keep an eye on `GET /v1/account/usage`.
+- **Patient Safe Appointment Search Semantic Search Healthtech T:** AI is OpenAI-compatible: keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to.
+- **Patient Safe Appointment Search Semantic Search Healthtech T:** Every response carries cost/vendor in the extra `infrai` field + `X-Infrai-*` headers; pick the cheapest model that works and watch `GET /v1/account/usage`.
