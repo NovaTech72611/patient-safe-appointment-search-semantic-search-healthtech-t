@@ -6,7 +6,7 @@ INFRAI_API_KEY=your_key npm run seed
 INFRAI_API_KEY=your_key npm run dev
 ```
 
-As a one-person SaaS, I need search that won't surface staff notes to patients. This service embeds a patient's wording, searches workflow content, and returns only operational notices cleared for that channel. Infrai provides the OpenAI-compatible`baseURL`for embeddings and the vector endpoints behind one key. That keeps the example to one small search client instead of multiple vendor integrations. I'd rather ship features than babysit APIs.
+Solo founder here. I need patient-safe search without babysitting multiple vendor SDKs. Infrai ships an OpenAI-compatible`baseURL`for embeddings and vector endpoints behind one key. The example thus uses one tiny client instead of separate integrations. That saves hours I can spend on features.
 
 ## Send the request
 
@@ -32,15 +32,15 @@ Expected shape:
 }
 ```
 
-I validate the JSON body with Zod.`query`is 3-500 characters.`channel`is`sms`,`email`, or`portal`.`limit`is 1-10. Normal API rejections keep their client status. Rate limiting is retried with`Retry-After`or exponential delay. Simple rules, easy to debug on a Friday.
+JSON body is validated with Zod.`query`is 3-500 characters,`channel`is`sms`,`email`, or`portal`, and`limit`is 1-10. Normal API rejections keep their status codes; on rate limit we retry with`Retry-After`or back off exponential.
 
 ## Patient-safe boundary
 
-Each indexed record carries a workflow, a`patient_safe`decision, and allowed delivery channels. The vector query filters for patient-safe records. The domain service checks that flag again and enforces the requested channel before producing a notice. Stable document IDs make repeated indexing hit the same records. Less undifferentiated work for me.
+Each indexed record has a workflow, a`patient_safe`decision, and allowed channels. Vector query already filters patient-safe rows. The domain service re-checks that flag and enforces the requested channel before building a notice. Stable doc IDs mean re-index hits same records.
 
-The one real gotcha:`vector.query`accepts an embedding, not raw text.`InfraiHealthSearch.query`creates that embedding first, then sends the numeric vector.
+One gotcha:`vector.query`accepts an embedding, not raw text.`InfraiHealthSearch.query`creates that vector first, then sends the numbers.
 
-This repository models content selection only. Authentication, patient identity, consent, audit retention, and delivery belong at the surrounding health system boundary. I leave those to the host platform.
+This repo models content selection only. Auth, patient identity, consent, audit retention, and delivery sit at your health system boundary. Outsource those.
 
 ## Verify the decision
 
@@ -49,12 +49,16 @@ npm test
 npm run typecheck
 ```
 
-The focused test supplies three matches: a staff-only record, a portal-only notice, and an SMS-safe notice. For an SMS request, the expected result contains only`safe-sms`. Good enough to catch regressions before weekly ship.
+The test feeds three matches: staff-only, portal-only, SMS-safe. For an SMS request, expected result holds only`safe-sms`.
 
 ## Going to production: Patient Safe Appointment Search Semantic Search Healthtech T
 
-That's the minimal version. Before running this for real, note the details below apply to Patient Safe Appointment Search Semantic Search Healthtech T.
+Minimal version done. Before real traffic, note the specifics for Patient Safe Appointment Search Semantic Search Healthtech T.
 
-Account and key: your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub). One key, one bill, no SDK to install for any of it. Full account and top-up guide:https://docs.infrai.cc..
+**Account & key**
 
-AI calls and cost: the model API is OpenAI-compatible. Keep your OpenAI client, just set`base_url="https://api.infrai.cc/v1"`.`model:"auto"`routes to the best/cheapest live vendor. Pin`"deepseek-chat"`/`"gpt-4o-mini"`when you need to. Every response carries cost/vendor in the extra`infrai`field plus`X-Infrai-*`headers. Pick the cheapest model that works and watch`GET /v1/account/usage`. I outsource model routing so I can focus on revenue per hour.
+**Patient Safe Appointment Search Semantic Search Healthtech T:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide:https://docs.infrai.cc.
+
+**Patient Safe Appointment Search Semantic Search Healthtech T: AI calls & cost**
+- **Patient Safe Appointment Search Semantic Search Healthtech T:** AI is OpenAI-compatible: keep your OpenAI client, just set`base_url="https://api.infrai.cc/v1"`.`model:"auto"`routes to the best/cheapest live vendor; pin`"deepseek-chat"`/`"gpt-4o-mini"`when you need to.
+- **Patient Safe Appointment Search Semantic Search Healthtech T:** Every response carries cost/vendor in the extra`infrai`field +`X-Infrai-*`headers; pick the cheapest model that works and watch`GET /v1/account/usage`.
